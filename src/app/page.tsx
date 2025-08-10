@@ -137,19 +137,27 @@ export default function Home() {
         )}
 
         {results && (
-          <div className="results-container">
+          <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-md text-green-800 text-left">
             {results.labels.length > 0 ? (
               <div className="labels-list">
-                <h4>Your horse is</h4>
-                {results.labels.map((label: DetectedLabel) => (
-                  <div
-                    key={label.name + label.confidence}
-                    className="label-item"
-                  >
-                    <strong>{label.name}</strong> - Confidence:{" "}
-                    {label.confidence?.toFixed(2)}%
-                  </div>
-                ))}
+                <h4 className="mb-4 font-semibold text-lg">Result:</h4>
+                {results.labels.map((label: DetectedLabel) => {
+                  const colorClass =
+                    label.confidence <= 50
+                      ? "confidence-low"
+                      : label.confidence <= 80
+                      ? "confidence-medium"
+                      : "confidence-high";
+                  return (
+                    <div
+                      key={label.name + label.confidence}
+                      className={colorClass}
+                    >
+                      <strong>{label.name}</strong> - Confidence:{" "}
+                      {label.confidence?.toFixed(2)}%
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p>No horses detected in this image.</p>

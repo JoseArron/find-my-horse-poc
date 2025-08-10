@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
         Bytes: buffer,
       },
       ProjectVersionArn: PROJECT_ARN,
-      MinConfidence: 70, // confidence threshold
-      MaxResults: 1,
+      MinConfidence: 0, // confidence threshold
+      MaxResults: 5,
     });
 
     const response = await rekognitionClient.send(command);

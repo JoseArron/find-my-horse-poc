@@ -14,7 +14,7 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:940482405990:project/find-my-horse-test/version/find-my-horse-test.2025-07-30T19.03.55/1753873435368";
+  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test/version/find-my-horse-test.2025-08-11T09.21.20/1754875280108";
 
 export async function POST(request: NextRequest) {
   try {

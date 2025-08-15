@@ -11,11 +11,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface DetectedLabel {
   name: string;
   confidence: number;
+  boundingBox?: {
+    Width: number;
+    Height: number;
+    Left: number;
+    Top: number;
+  };
 }
 
 interface AnalysisResults {
@@ -29,6 +35,8 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResults | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const imgWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -36,8 +44,17 @@ export default function Home() {
       setSelectedFile(file);
       setResults(null);
       setError(null);
+      // build a preview URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +97,7 @@ export default function Home() {
           Upload a photo of your horse and check which horse it is
         </CardDescription>
         <div className="horse-list space-y-6">
-          <div className="horse-item text-lg">
+          {/* <div className="horse-item text-lg">
             <Label>Ping Hai Comet</Label>
             <Image
               src="/horses/ping-hai-comet.jpg"
@@ -88,7 +105,7 @@ export default function Home() {
               width={200}
               height={200}
             />
-          </div>
+          </div> */}
           <div className="horse-item text-lg">
             <Label>Prestige Good</Label>
             <Image
@@ -98,7 +115,7 @@ export default function Home() {
               height={200}
             />
           </div>
-          <div className="horse-item text-lg">
+          {/* <div className="horse-item text-lg">
             <Label>Vigor Elleegant</Label>
             <Image
               src="/horses/vigor-elleegant.jpg"
@@ -106,10 +123,10 @@ export default function Home() {
               width={200}
               height={200}
             />
-          </div>
+          </div> */}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         <Label className="text-lg">Upload a photo of your horse</Label>
         <form onSubmit={handleSubmit} className="flex flex-row gap-2">
           <Input
@@ -128,6 +145,66 @@ export default function Home() {
             {isAnalyzing ? "Loading" : "Find My Horse"}
           </Button>
         </form>
+
+        {previewUrl && (
+          <div className="mt-4">
+            <Label className="mb-2 block">Preview</Label>
+            <div
+              ref={imgWrapperRef}
+              className="relative inline-block max-w-full"
+              style={{ lineHeight: 0 }}
+            >
+              <Image
+                src={previewUrl}
+                alt="Selected preview"
+                className="rounded-md max-w-full h-auto"
+                width={500}
+                height={500}
+              />
+
+              {/* overlay bounding box if results exist */}
+              {results?.labels?.length
+                ? results.labels
+                    .filter((l) => !!l.boundingBox)
+                    .map((l, idx) => {
+                      const bb = l.boundingBox!;
+                      const leftPct = bb.Left * 100;
+                      const topPct = bb.Top * 100;
+                      const widthPct = bb.Width * 100;
+                      const heightPct = bb.Height * 100;
+                      return (
+                        <div
+                          key={`${l.name}-${idx}`}
+                          className="absolute border-2 rounded-sm"
+                          style={{
+                            left: `${leftPct}%`,
+                            top: `${topPct}%`,
+                            width: `${widthPct}%`,
+                            height: `${heightPct}%`,
+                            borderColor: "#10b981",
+                            boxShadow: "0 0 0 2px rgba(16,185,129,0.2)",
+                          }}
+                          aria-label={`${l.name} (${l.confidence?.toFixed(
+                            1
+                          )}%)`}
+                          title={`${l.name} (${l.confidence?.toFixed(1)}%)`}
+                        >
+                          <span
+                            className="absolute -top-6 left-0 bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded"
+                            style={{ whiteSpace: "nowrap" }}
+                          >
+                            {l.name}{" "}
+                            {l.confidence
+                              ? `(${l.confidence.toFixed(1)}%)`
+                              : ""}
+                          </span>
+                        </div>
+                      );
+                    })
+                : null}
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="error-message">

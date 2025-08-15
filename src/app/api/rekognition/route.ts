@@ -14,7 +14,7 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test/version/find-my-horse-test.2025-08-11T09.21.20/1754875280108";
+  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-1/version/find-my-horse-test-1.2025-08-16T03.18.35/1755285514745";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       },
       ProjectVersionArn: PROJECT_ARN,
       MinConfidence: 0, // confidence threshold
-      MaxResults: 5,
+      MaxResults: 1,
     });
 
     const response = await rekognitionClient.send(command);
@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
     const results = customLabels.map((label: CustomLabel) => ({
       name: label.Name,
       confidence: label.Confidence,
+      boundingBox: label.Geometry?.BoundingBox,
     }));
 
     return NextResponse.json({

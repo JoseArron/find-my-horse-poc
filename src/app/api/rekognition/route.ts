@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   RekognitionClient,
   DetectCustomLabelsCommand,
-  CustomLabel,
+  BoundingBox,
 } from "@aws-sdk/client-rekognition";
 
 const rekognitionClient = new RekognitionClient({
@@ -14,7 +14,7 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-1/version/find-my-horse-test-1.2025-08-16T03.18.35/1755285514745";
+  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,25 +38,47 @@ export async function POST(request: NextRequest) {
         Bytes: buffer,
       },
       ProjectVersionArn: PROJECT_ARN,
-      MinConfidence: 0, // confidence threshold
+      MinConfidence: 70, // confidence threshold
       MaxResults: 1,
     });
 
     const response = await rekognitionClient.send(command);
-    console.log(`response: ${response}`);
+    console.log(
+      `response: ${response.CustomLabels?.map((label) => label.Name).join(
+        ", "
+      )}`
+    );
 
     const customLabels = response.CustomLabels || [];
 
-    const results = customLabels.map((label: CustomLabel) => ({
-      name: label.Name,
-      confidence: label.Confidence,
-      boundingBox: label.Geometry?.BoundingBox,
+    // highest-confidence entry per label name
+    // const bestByLabel = new Map<
+    //   string,
+    //   { confidence: number; boundingBox?: BoundingBox }
+    // >();
+    // for (const label of customLabels) {
+    //   const name = label.Name;
+    //   if (!name) continue;
+    //   const confidence = label.Confidence ?? 0;
+    //   const existing = bestByLabel.get(name);
+    //   if (!existing || confidence > existing.confidence) {
+    //     bestByLabel.set(name, {
+    //       confidence,
+    //       boundingBox: label.Geometry?.BoundingBox,
+    //     });
+    //   }
+    // }
+
+    const results = customLabels.map((l) => ({
+      name: l.Name,
+      confidence: l.Confidence,
+      boundingBox: l.Geometry?.BoundingBox,
     }));
 
     return NextResponse.json({
       success: true,
       labels: results,
-      totalLabels: customLabels.length,
+      totalLabels: results.length,
     });
   } catch (error) {
     console.error("Rekognition error:", error);

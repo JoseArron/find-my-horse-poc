@@ -97,7 +97,7 @@ export default function Home() {
           Upload a photo of your horse and check which horse it is
         </CardDescription>
         <div className="horse-list space-y-6">
-          {/* <div className="horse-item text-lg">
+          <div className="horse-item text-lg">
             <Label>Ping Hai Comet</Label>
             <Image
               src="/horses/ping-hai-comet.jpg"
@@ -105,7 +105,7 @@ export default function Home() {
               width={200}
               height={200}
             />
-          </div> */}
+          </div>
           <div className="horse-item text-lg">
             <Label>Prestige Good</Label>
             <Image
@@ -115,7 +115,7 @@ export default function Home() {
               height={200}
             />
           </div>
-          {/* <div className="horse-item text-lg">
+          <div className="horse-item text-lg">
             <Label>Vigor Elleegant</Label>
             <Image
               src="/horses/vigor-elleegant.jpg"
@@ -123,7 +123,7 @@ export default function Home() {
               width={200}
               height={200}
             />
-          </div> */}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

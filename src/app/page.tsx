@@ -162,45 +162,51 @@ export default function Home() {
                 height={500}
               />
 
-              {/* overlay bounding box if results exist */}
               {results?.labels?.length
-                ? results.labels
-                    .filter((l) => !!l.boundingBox)
-                    .map((l, idx) => {
-                      const bb = l.boundingBox!;
-                      const leftPct = bb.Left * 100;
-                      const topPct = bb.Top * 100;
-                      const widthPct = bb.Width * 100;
-                      const heightPct = bb.Height * 100;
-                      return (
-                        <div
-                          key={`${l.name}-${idx}`}
-                          className="absolute border-2 rounded-sm"
-                          style={{
-                            left: `${leftPct}%`,
-                            top: `${topPct}%`,
-                            width: `${widthPct}%`,
-                            height: `${heightPct}%`,
-                            borderColor: "#10b981",
-                            boxShadow: "0 0 0 2px rgba(16,185,129,0.2)",
-                          }}
-                          aria-label={`${l.name} (${l.confidence?.toFixed(
-                            1
-                          )}%)`}
-                          title={`${l.name} (${l.confidence?.toFixed(1)}%)`}
-                        >
-                          <span
-                            className="absolute -top-6 left-0 bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded"
-                            style={{ whiteSpace: "nowrap" }}
-                          >
-                            {l.name}{" "}
-                            {l.confidence
-                              ? `(${l.confidence.toFixed(1)}%)`
-                              : ""}
-                          </span>
-                        </div>
+                ? (() => {
+                    const best = results.labels
+                      .filter((l) => !!l.boundingBox)
+                      .reduce((max, l) =>
+                        (l.confidence ?? 0) > (max.confidence ?? 0) ? l : max
                       );
-                    })
+
+                    if (!best?.boundingBox) return null;
+
+                    const bb = best.boundingBox;
+                    const leftPct = bb.Left * 100;
+                    const topPct = bb.Top * 100;
+                    const widthPct = bb.Width * 100;
+                    const heightPct = bb.Height * 100;
+
+                    return (
+                      <div
+                        key={best.name}
+                        className="absolute border-2 rounded-sm"
+                        style={{
+                          left: `${leftPct}%`,
+                          top: `${topPct}%`,
+                          width: `${widthPct}%`,
+                          height: `${heightPct}%`,
+                          borderColor: "#10b981",
+                          boxShadow: "0 0 0 2px rgba(16,185,129,0.2)",
+                        }}
+                        aria-label={`${best.name} (${best.confidence?.toFixed(
+                          1
+                        )}%)`}
+                        title={`${best.name} (${best.confidence?.toFixed(1)}%)`}
+                      >
+                        <span
+                          className="absolute -top-6 left-0 bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          {best.name}{" "}
+                          {best.confidence
+                            ? `(${best.confidence.toFixed(1)}%)`
+                            : ""}
+                        </span>
+                      </div>
+                    );
+                  })()
                 : null}
             </div>
           </div>

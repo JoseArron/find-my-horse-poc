@@ -14,7 +14,7 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
+  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-26T23.57.12/1756223833273";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
         Bytes: buffer,
       },
       ProjectVersionArn: PROJECT_ARN,
-      MinConfidence: 70, // confidence threshold
-      MaxResults: 1,
+      MinConfidence: 0, // confidence threshold
+      MaxResults: 3,
     });
 
     const response = await rekognitionClient.send(command);

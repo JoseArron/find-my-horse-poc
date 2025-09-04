@@ -3,6 +3,7 @@ import {
   RekognitionClient,
   DetectCustomLabelsCommand,
   BoundingBox,
+  DetectTextCommand,
 } from "@aws-sdk/client-rekognition";
 
 const rekognitionClient = new RekognitionClient({
@@ -14,7 +15,22 @@ const rekognitionClient = new RekognitionClient({
 });
 
 const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-26T23.57.12/1756223833273";
+  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
+
+const HORSE_IDS = {
+  K131: "Prestige Good",
+  H344: "Ping Hai Comet",
+  J375: "Vigor Elleegant",
+};
+
+const detectText = async (imageBytes: Buffer) => {
+  const command = new DetectTextCommand({
+    Image: { Bytes: imageBytes },
+  });
+
+  const response = await rekognitionClient.send(command);
+  return response.TextDetections || [];
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +55,7 @@ export async function POST(request: NextRequest) {
       },
       ProjectVersionArn: PROJECT_ARN,
       MinConfidence: 0, // confidence threshold
-      MaxResults: 20,
+      MaxResults: 5,
     });
 
     const response = await rekognitionClient.send(command);
@@ -74,6 +90,26 @@ export async function POST(request: NextRequest) {
       confidence: l.Confidence,
       boundingBox: l.Geometry?.BoundingBox,
     }));
+
+    const textDetections = await detectText(buffer);
+
+    console.log(
+      `Detected text: ${textDetections
+        .map((d) => d.DetectedText)
+        .filter(Boolean)
+        .join(", ")}`
+    );
+    if (textDetections.length > 0) {
+      for (const d of textDetections) {
+        const code = d.DetectedText?.trim().toUpperCase();
+        const isHorseId = code && Object.keys(HORSE_IDS).includes(code);
+        if (!code || !isHorseId) continue;
+        const horseName = HORSE_IDS[code as keyof typeof HORSE_IDS];
+        if (!horseName) continue;
+        const match = results.find((r) => r.name === horseName);
+        if (match) match.confidence = 100;
+      }
+    }
 
     return NextResponse.json({
       success: true,

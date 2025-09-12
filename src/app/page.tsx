@@ -17,10 +17,10 @@ interface DetectedLabel {
   name: string;
   confidence: number;
   boundingBox?: {
-    Width: number;
-    Height: number;
-    Left: number;
-    Top: number;
+    width: number;
+    height: number;
+    left: number;
+    top: number;
   };
 }
 
@@ -173,10 +173,10 @@ export default function Home() {
                     if (!best?.boundingBox) return null;
 
                     const bb = best.boundingBox;
-                    const leftPct = bb.Left * 100;
-                    const topPct = bb.Top * 100;
-                    const widthPct = bb.Width * 100;
-                    const heightPct = bb.Height * 100;
+                    const leftPct = bb.left * 100;
+                    const topPct = bb.top * 100;
+                    const widthPct = bb.width * 100;
+                    const heightPct = bb.height * 100;
 
                     return (
                       <div

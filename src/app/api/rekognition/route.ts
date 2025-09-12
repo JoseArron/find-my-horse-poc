@@ -2,9 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   RekognitionClient,
   DetectCustomLabelsCommand,
-  BoundingBox,
   DetectTextCommand,
 } from "@aws-sdk/client-rekognition";
+
+import {
+  InvokeEndpointCommand,
+  SageMakerRuntimeClient,
+} from "@aws-sdk/client-sagemaker-runtime";
+
+import type { SageMakerObjectDetectionResponse } from "./types";
+
+// const PROJECT_ARN =
+//   "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
+
+const CONFIDENCE_THRESHOLD = 5; // percent
+
+const CLASS_MAP = {
+  0: "Prestige Good",
+  1: "Vigor Elleegant",
+  2: "Ping Hai Comet",
+};
+
+const HORSE_IDS = {
+  K131: "Prestige Good",
+  J375: "Vigor Elleegant",
+  H344: "Ping Hai Comet",
+};
 
 const rekognitionClient = new RekognitionClient({
   region: "ap-southeast-2",
@@ -14,14 +37,13 @@ const rekognitionClient = new RekognitionClient({
   },
 });
 
-const PROJECT_ARN =
-  "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
-
-const HORSE_IDS = {
-  K131: "Prestige Good",
-  H344: "Ping Hai Comet",
-  J375: "Vigor Elleegant",
-};
+const sagemakerRuntimeClient = new SageMakerRuntimeClient({
+  region: "ap-southeast-2",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  },
+});
 
 const detectText = async (imageBytes: Buffer) => {
   const command = new DetectTextCommand({
@@ -49,47 +71,63 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const command = new DetectCustomLabelsCommand({
-      Image: {
-        Bytes: buffer,
-      },
-      ProjectVersionArn: PROJECT_ARN,
-      MinConfidence: 0, // confidence threshold
-      MaxResults: 5,
+    // const command = new DetectCustomLabelsCommand({
+    //   Image: {
+    //     Bytes: buffer,
+    //   },
+    //   ProjectVersionArn: PROJECT_ARN,
+    //   MinConfidence: 0, // confidence threshold
+    //   MaxResults: 5,
+    // });
+
+    const command = new InvokeEndpointCommand({
+      EndpointName: "find-my-horse-poc-endpoint",
+      ContentType: "image/jpeg",
+      Accept: "application/json;annotation=1",
+      Body: buffer,
     });
 
-    const response = await rekognitionClient.send(command);
+    const response = await sagemakerRuntimeClient.send(command);
+
+    if (!response.Body) {
+      throw new Error("No response body from SageMaker endpoint");
+    }
+
+    // parse json from response body
+    const responseJson = (await new Response(
+      response.Body
+    ).json()) as SageMakerObjectDetectionResponse;
+
+    // const response = await rekognitionClient.send(command);
+    console.log("SageMaker response:", JSON.stringify(responseJson, null, 2));
+
+    const predictions = responseJson.predictions[0].annotations;
+
+    console.log(`Total predictions: ${predictions.length}`);
+
     console.log(
-      `response: ${response.CustomLabels?.map((label) => label.Name).join(
-        ", "
-      )}`
+      `response: ${[...predictions]
+        .map((label) => CLASS_MAP[label.class_id as keyof typeof CLASS_MAP])
+        .join(", ")}`
     );
 
-    const customLabels = response.CustomLabels || [];
-
-    // highest-confidence entry per label name
-    // const bestByLabel = new Map<
-    //   string,
-    //   { confidence: number; boundingBox?: BoundingBox }
-    // >();
-    // for (const label of customLabels) {
-    //   const name = label.Name;
-    //   if (!name) continue;
-    //   const confidence = label.Confidence ?? 0;
-    //   const existing = bestByLabel.get(name);
-    //   if (!existing || confidence > existing.confidence) {
-    //     bestByLabel.set(name, {
-    //       confidence,
-    //       boundingBox: label.Geometry?.BoundingBox,
-    //     });
-    //   }
-    // }
-
-    const results = customLabels.map((l) => ({
-      name: l.Name,
-      confidence: l.Confidence,
-      boundingBox: l.Geometry?.BoundingBox,
-    }));
+    const results = predictions
+      .filter(
+        // filter out low confidence and invalid class IDs
+        (l) =>
+          l.score * 100 >= CONFIDENCE_THRESHOLD &&
+          Object.keys(CLASS_MAP).includes(l.class_id.toString())
+      )
+      .map((l) => ({
+        name: CLASS_MAP[l.class_id as keyof typeof CLASS_MAP],
+        confidence: l.score * 100,
+        boundingBox: {
+          left: l.left / responseJson.predictions[0].image_size.width,
+          top: l.top / responseJson.predictions[0].image_size.height,
+          width: l.width / responseJson.predictions[0].image_size.width,
+          height: l.height / responseJson.predictions[0].image_size.height,
+        },
+      }));
 
     const textDetections = await detectText(buffer);
 

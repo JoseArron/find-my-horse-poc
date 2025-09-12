@@ -15,7 +15,7 @@ import type { SageMakerObjectDetectionResponse } from "./types";
 // const PROJECT_ARN =
 //   "arn:aws:rekognition:ap-southeast-2:705229835130:project/find-my-horse-test-2/version/find-my-horse-test-2.2025-08-27T17.30.58/1756287057765";
 
-const CONFIDENCE_THRESHOLD = 5; // percent
+const CONFIDENCE_THRESHOLD = 4; // percent
 
 const CLASS_MAP = {
   0: "Prestige Good",
@@ -143,9 +143,15 @@ export async function POST(request: NextRequest) {
         const isHorseId = code && Object.keys(HORSE_IDS).includes(code);
         if (!code || !isHorseId) continue;
         const horseName = HORSE_IDS[code as keyof typeof HORSE_IDS];
+        console.log(`Found horse ID text: ${code}, name: ${horseName}`);
         if (!horseName) continue;
         const match = results.find((r) => r.name === horseName);
-        if (match) match.confidence = 100;
+        if (match) {
+          match.confidence = 100;
+          console.log(
+            `Matched horse ID ${code} to ${horseName} with confidence ${d.Confidence}`
+          );
+        }
       }
     }
 

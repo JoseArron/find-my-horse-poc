@@ -72,7 +72,7 @@ export default function Home() {
       const formData = new FormData();
       formData.append("image", selectedFile);
 
-      const response = await fetch("/api/rekognition", {
+      const response = await fetch("/api/detect-horse", {
         method: "POST",
         body: formData,
       });

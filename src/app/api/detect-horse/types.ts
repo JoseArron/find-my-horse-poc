@@ -24,3 +24,13 @@ interface Prediction {
 export interface SageMakerObjectDetectionResponse {
   predictions: Prediction[];
 }
+
+export interface IndexedResult {
+  image_id: string;
+  horse_name: string;
+  image_uri: string;
+  annotations: IndexedAnnotation[];
+  labeled_at: Date;
+}
+
+export type IndexedAnnotation = Omit<Annotation, "class_id">;

@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
     const hash = await phash(buffer);
 
-    const textDetections = await detectText(buffer);
+    // const textDetections = await detectText(buffer);
 
     const getCommand = new GetCommand({
       TableName: "HorseImages",
